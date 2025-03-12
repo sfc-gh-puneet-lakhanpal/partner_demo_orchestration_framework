@@ -28,9 +28,7 @@ from dotenv import load_dotenv
 from snowflake.snowpark import Session
 
 from agent_gateway import Agent
-from agent_gateway import TruAgent
 from agent_gateway.tools import CortexAnalystTool, CortexSearchTool, PythonTool
-from trulens.connectors.snowflake import SnowflakeConnector
 from agent_gateway.tools.utils import parse_log_message
 
 warnings.filterwarnings("ignore")
@@ -72,10 +70,9 @@ python_config = {
 if "prompt_history" not in st.session_state:
     st.session_state["prompt_history"] = {}
 
-if "snowpark" not in st.session_state or st.session_state.snowpark is None or "conn" not in st.session_state or st.session_state.conn is None:
+if "snowpark" not in st.session_state or st.session_state.snowpark is None:
     st.session_state.snowpark = Session.builder.configs(connection_parameters).create()
-    st.session_state.conn = SnowflakeConnector(**connection_parameters)
-
+    
     topic_search_config = {
         "service_name": "TOPIC_SEARCH",
         "service_topic": "Support case topics",
@@ -134,9 +131,8 @@ if "snowpark" not in st.session_state or st.session_state.snowpark is None or "c
 
 
 if "agent" not in st.session_state:
-    st.session_state.agent = Agent(snowflake_connection=st.session_state.snowpark, tools=st.session_state.snowflake_tools)
-    #st.session_state.agent = TruAgent(app_name="trulens_orchestration_framework_streamlit",app_version="v0.1",trulens_snowflake_connection=st.session_state.conn,tools=st.session_state.snowflake_tools,snowflake_connection=st.session_state.snowpark)
-
+    st.session_state.agent = Agent(snowflake_connection=st.session_state.snowpark, tools=st.session_state.snowflake_tools, max_retries=3)
+    
 
 def create_prompt(prompt_key: str):
     if prompt_key in st.session_state:

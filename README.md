@@ -22,10 +22,24 @@ This library is optimized for client-side orchestration. If you prefer a managed
 
 ## Installation
 
-In a new virtual environment with Python 3.10 or 3.11, install the latest version of this framework.
-```sh
-!pip install git+https://github.com/Snowflake-Labs/orchestration-framework.git@truelens --force-reinstall
+1. Create a conda environment and activate it.
 ```
+conda create -n orchestration_framework python=3.11
+conda activate orchestration_framework
+```
+2. Install the orchestration framework.
+```
+pip install git+https://github.com/Snowflake-Labs/orchestration-framework.git@truelens --force-reinstall
+```
+
+3. Configure `.env` file.
+
+4. Demo:
+    - In order to show Streamlit app, do ```
+    cd demo_app
+    streamlit run demo_app.py
+    ```
+    - In order to show Trulens integration, select `orchestration_framework` kernel and run `CX_AGENTS.ipynb`.
 
 **Note For Mac Users**: Mac users have reported SSL Certificate issues when using the
 Cortex REST API. This is related to python virtual environments not having access to
@@ -33,107 +47,34 @@ local certificates. One potential solution to avoid SSL Certificate issues is to
 Finder to locate the "Install Certificates.command" file in your relevant Python
 directory and run that file before initializing the agent. See [this thread](https://github.com/python/cpython/issues/87570#issuecomment-1093904961) for more info.
 
-## Tool Requirements
-
-Agents require the underlying Cortex Search, Cortex Analyst, or Python tools to
-be configured by the user.
-
-To follow the Quickstart notebook in this repo, you can generate the Cortex Search and
-Cortex Analyst demo services as follows:
-
-```python
-from agent_gateway.tools.utils import generate_demo_services
-from snowflake.snowpark import Session
-
-session = Session.builder.create()
-generate_demo_services(session)
-```
-
-## Snowflake Tool Configuration
-
-Tools must be configured with relevant metadata for the Agent Gateway to route requests to the
-appropriate service.
-
-**NOTE:** For best results, use specific and mutually exclusive language in your
-metadata descriptions to make it easy for the agent to delegate work to the right
-tools.
-
-##### Cortex Search Tool Configuration
-
-```python
-from agent_gateway.tools import CortexSearchTool, CortexAnalystTool, PythonTool
-
-# Cortex Search Service Config
-search_config = {
-    "service_name": "SEC_SEARCH_SERVICE",
-    "service_topic": "Snowflake's business,product offerings,and performance",
-    "data_description": "Snowflake annual reports",
-    "retrieval_columns": ["CHUNK"],
-    "snowflake_connection": session,
-}
-
-annual_reports = CortexSearchTool(**search_config)
-```
-
-##### Cortex Analyst Tool Configuration
-
-```python
-# Cortex Analyst Config
-analyst_config = {
-    "semantic_model": "sp500_semantic_model.yaml",
-    "stage": "ANALYST",
-    "service_topic": "S&P500 company and stock metrics",
-    "data_description": "a table with stock and financial metrics about S&P500 companies ",
-    "snowflake_connection": session,
-}
-
-sp500 = CortexAnalystTool(**analyst_config)
-```
-##### Python Tool Configuration
-
-```python
-def get_html(url):
-        response = requests.get(url)
-        return response.text
-
-python_scraper_config = {
-    "tool_description": "reads the html from a given URL or website",
-    "output_description": "html of a webpage",
-    "python_func": get_html
-    }
-
-web_crawler = PythonTool(**python_scraper_config)
-```
-
-## Agent Configuration + Usage
-
-````python
-from agent_gateway import Agent
-
-# Config + Initialize Agent
-snowflake_tools = [annual_reports, sp500, web_crawler]
-snowflake_agent = Agent(snowflake_connection=session, tools=snowflake_tools)
-
-# Structured Data Question (Text2SQL)
-answer = snowflake_agent("What is market cap of company X?")
-print(answer)
-
-# Unstructured Data Question (RAG)
-answer = snowflake_agent("What are the strategic plans for company X")
-print(answer)
-
-# Web Search Question (Python Tool)
-answer = snowflake_agent(
-    "Summarize this article: http://localhost:8080/dummyproductannouncements/interview.html"
-)
-print(answer)
-````
 
 # FAQs
 
 #### Where does the Agent Gateway run?
 
 - This library is optimized for client-side orchestration. If you prefer a managed service that does the orchestration inside of Snowflake, we recommend using the Snowflake Chat API.
+
+#### Why is this library so good ?
+The library has retries built in. For example, ask this question:
+
+```
+cx_agent("Give me the key details about the case with Ticket ID: f4fca2ad-84e4-4bc9-9f86-9bd3a0da3d33. Also, tell me how much the customer mentioned in the ticket has spent on rides")
+```
+Initial plan:
+```
+1. support_tickets_cortexanalyst("Give me the key details about the case with Ticket ID: f4fca2ad-84e4-4bc9-9f86-9bd3a0da3d33")
+2. rides_cortexanalyst("How much has the customer mentioned in the ticket with Ticket ID: f4fca2ad-84e4-4bc9-9f86-9bd3a0da3d33 spent on rides?")
+Thought: I can answer the question now.
+3. fuse()<END_OF_PLAN>
+```
+and then:
+```
+1. support_tickets_cortexanalyst("Give me the customer ID associated with the Ticket ID: f4fca2ad-84e4-4bc9-9f86-9bd3a0da3d33")
+2. rides_cortexanalyst("How much has the customer with ID: $1 spent on rides?")
+3. fuse()
+```
+
+The initial plan it generated didn't fully account for the dependencies between the tools. so it generates a new plan as shown above. see how in the first plan it tries to use the ticket ID to lookup the amount spent in the rides table?. but the rides table doesn't have the Ticket ID so it throws that error.
 
 #### Can I use the Agent Gateway within SPCS or a Snowflake Notebook?
 
