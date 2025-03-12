@@ -21,12 +21,11 @@ import sys
 import threading
 import uuid
 import warnings
-
 import requests
 import streamlit as st
 from dotenv import load_dotenv
 from snowflake.snowpark import Session
-
+os.environ['LOGGING_LEVEL']='DEBUG'
 from agent_gateway import Agent
 from agent_gateway.tools import CortexAnalystTool, CortexSearchTool, PythonTool
 from agent_gateway.tools.utils import parse_log_message

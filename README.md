@@ -14,7 +14,7 @@ Text2SQL access pattern.
 - **Python Tool**: For supporting custom user operations (i.e. sending API requests to
 third party services), which requires calling arbitrary python.
 
-The Agent Gateway supports multi-step and multi-tool workflows. Users have the flexibility to create multiple Cortex Search and Cortex Analyst tools for use with the Agent Gateway. For a walkthrough of how to configure and run a system with all 3 types of tools, see the [Quickstart](Quickstart.ipynb) notebook.
+The Agent Gateway supports multi-step and multi-tool workflows. Users have the flexibility to create multiple Cortex Search and Cortex Analyst tools for use with the Agent Gateway. 
 
 This library is optimized for client-side orchestration. If you prefer a managed service, we recommend the Snowflake Cortex Agents API.
 
