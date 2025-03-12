@@ -48,22 +48,32 @@ os.environ["NEWS_API_TOKEN"] = os.getenv("NEWS_API_TOKEN")
 
 
 class NewsTool:
-    def __init__(self, token, limit) -> None:
-        self.api_token = token
-        self.limit = limit
+    def __init__(self, token) -> None:
+        self.url = "https://serpapi.com/search"
 
-    def news_search(self, news_query: str) -> str:
-        news_request = f"""https://api.thenewsapi.com/v1/news/all?api_token={self.api_token}&search={news_query}&language=en&limit={self.limit}"""
-        response = requests.get(news_request)
-        json_response = json.loads(response.content)["data"]
+        self.params = {
+            "engine": "google_news",
+            "gl": "us",
+            "hl": "en",
+            "api_key":token
+        }
 
-        return str(json_response)
+    def google_news_search(self, news_query: str) -> str:
+        """Searches google for recent news about news_query and returns the results, including url's and sources """
+
+        self.params['q'] = news_query
+        response = requests.get(self.url, params=self.params)
+
+        if response.status_code == 200:
+            return str([{'position':i['position'],'title':i['title'],'source':i['source']['name'],'source_url':i['link']} for i in response.json()['news_results']])
+        else:
+            return f"Request failed with status code: {response.status_code}"
 
 
 python_config = {
-    "tool_description": "searches for relevant news based on user query",
+    "tool_description": "searches for google for relevant news based on user query",
     "output_description": "relevant articles",
-    "python_func": NewsTool(token=os.getenv("NEWS_API_TOKEN"), limit=3).news_search,
+    "python_func": NewsTool(token=os.getenv("SERPAPI_KEY")).google_news_search,
 }
 
 if "prompt_history" not in st.session_state:
@@ -72,43 +82,45 @@ if "prompt_history" not in st.session_state:
 if "snowpark" not in st.session_state or st.session_state.snowpark is None:
     st.session_state.snowpark = Session.builder.configs(connection_parameters).create()
     
+    case_search_config = {
+        "service_name": "CASE_SEARCH",
+        "service_topic": "non-specifc examples of customer support cases",
+        "data_description": "customer support case details, including ticket ID and case description",
+        "retrieval_columns": ["TICKET_BODY","TICKET_ID"],
+        "snowflake_connection": st.session_state.snowpark,
+        "k":7
+    }
+
     topic_search_config = {
         "service_name": "TOPIC_SEARCH",
-        "service_topic": "Support case topics",
-        "data_description": "Quarterly analysis of support case topics, specifically focusing on the domain of Rider Experience for a specific calendar quarter.",
-        "retrieval_columns": ["topic_summary", "topic", "domain", "quarter", "case_count"],
+        "service_topic": "only use when description and general information requested about a specific customer support topic are requested.",
+        "data_description": "summaries of customer support topics",
+        "retrieval_columns": ["TOPIC_SUMMARY","CASE_COUNT"],
         "snowflake_connection": st.session_state.snowpark,
     }
 
     domain_search_config = {
         "service_name": "DOMAIN_SEARCH",
-        "service_topic": "Overview of main pain points, overall health scores of various topics, notable trends in metrics, and recommendations for areas that need immediate attention. This information is part of a broader document that analyzes support domain health metrics, including case volumes, severity rates, response times, and overall health scores across different domains.",
-        "data_description": "Detailed analysis of the Driver Operations, Rider Experience, Corporate and Fleet Accounts, Safety and Security, Driver Operations, Loyalty and Promotions and App Connectivity product domains in different calendar quarters.",
-        "retrieval_columns": ["domain_summary", "domain", "quarter"],
+        "service_topic": "only use when high level information about a product area/domain is requested. this is aggregated customer feedback for a product area or product domain ",
+        "data_description": "summaries of customer support feedback for key product areas and domains",
+        "retrieval_columns": ["DOMAIN_SUMMARY"],
         "snowflake_connection": st.session_state.snowpark,
-    }
-
-    case_search_config = {
-        "service_name": "CASE_SEARCH",
-        "service_topic": "Support ticket details",
-        "data_description": "Details of Support tickets on Ride booking, Ride tracking, Rating and feedback, Driver safety, Login authentication, Ride Verification, Background Checks, Incident reporting, Event rides, Expense tracking, Subscription plans, Payment options, Driver matching, Earnings dashboard, Navigation routes, App performance, Notifications, Language support, Emergency Features, Reward program, Promo codes, Corporate rides, Fleet management and Driver Rating Dashboard",
-        "retrieval_columns": ["ticket_body", "domain","feature","topic","quarter","ticket_id","severity"],
-        "snowflake_connection": st.session_state.snowpark,
+        "k":1
     }
 
     ride_analyst_config = {
         "semantic_model": "rides.yaml",
         "stage": "SEMANTIC_YAMLS",
-        "service_topic": "Rides related metrics",
-        "data_description": "a table with Rides providing a comprehensive summary of ride data, including ride ID, customer and driver information, quarter, timestamp, location, and ride cost allowing for easy analysis and reporting of ride-related activities.",
+        "service_topic": "use for every quantitative question about rides or requests for a specific ride transaction, or revenue related to rides. includes key metrics related to rides and includes RIDE_ID, CUSTOMER_ID, DRIVER_ID, QUARTER,TIMESTAMP,LOCATION,RIDE_COST ",
+        "data_description": "ride transaction(s), including driver information, customer information, and ride fare",
         "snowflake_connection": st.session_state.snowpark,
     }
 
-    support_ticket_analyst_config = {
+    support_analyst_config = {
         "semantic_model": "support_tickets.yaml",
         "stage": "SEMANTIC_YAMLS",
-        "service_topic": "Support tickets related metrics",
-        "data_description": "a table with Support Tickets providing a comprehensive summary of support tickets, including customer id, ticket details, and key metrics such as possession time, life time, and health scores.",
+        "service_topic": "use for quantitative questions about support requests, including the distribution of cases within a domain or topic. also ALWAYS use if a user requests details about a specific support case. includes key metrics about support cases.  ",
+        "data_description": "customer support case(s)",
         "snowflake_connection": st.session_state.snowpark,
     }
 
@@ -117,20 +129,20 @@ if "snowpark" not in st.session_state or st.session_state.snowpark is None:
     st.session_state.domain_search = CortexSearchTool(**domain_search_config)
     st.session_state.case_search = CortexSearchTool(**case_search_config)
     st.session_state.ride_analyst = CortexAnalystTool(**ride_analyst_config)
-    st.session_state.support_ticket_analyst = CortexAnalystTool(**support_ticket_analyst_config)
+    st.session_state.support_analyst = CortexAnalystTool(**support_analyst_config)
     st.session_state.news_search = PythonTool(**python_config)
     st.session_state.snowflake_tools = [
         st.session_state.topic_search,
         st.session_state.domain_search,
         st.session_state.case_search,
         st.session_state.ride_analyst,
-        st.session_state.support_ticket_analyst,
+        st.session_state.support_analyst,
         st.session_state.news_search,
     ]
 
 
 if "agent" not in st.session_state:
-    st.session_state.agent = Agent(snowflake_connection=st.session_state.snowpark, tools=st.session_state.snowflake_tools, max_retries=3)
+    st.session_state.agent = Agent(snowflake_connection=st.session_state.snowpark, tools=st.session_state.snowflake_tools, max_retries=5)
     
 
 def create_prompt(prompt_key: str):

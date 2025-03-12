@@ -42,6 +42,13 @@ pip install git+https://github.com/Snowflake-Labs/orchestration-framework.git@tr
     ```
     - In order to show Trulens integration, select `orchestration_framework` kernel and run `CX_AGENTS.ipynb`.
 
+5: Sample questions to ask:
+```
+1. How many total rides did we give in 2024? And how many total customer support tickets did we receive
+2. What are the top concerns that users are reporting in the Safety domain cases? How does that compare with what Uber and Lyft customers are complaining about? 
+3. Are there any recent safety incidents in the news about Uber or Lyft customers? Give examples of support cases where our customers are reporting similar issues and make sure to include the Ticket ID
+4. Give me the key details about the case with Ticket ID: f4fca2ad-84e4-4bc9-9f86-9bd3a0da3d33. Also, tell me how much the customer mentioned in the ticket has spent on rides
+```
 **Note For Mac Users**: Mac users have reported SSL Certificate issues when using the
 Cortex REST API. This is related to python virtual environments not having access to
 local certificates. One potential solution to avoid SSL Certificate issues is to use
