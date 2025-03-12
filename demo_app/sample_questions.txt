@@ -1,0 +1,3 @@
+how many total rides did we give in 2024 ? And how many total customer support tickets did we receive
+Are Uber and Lyft customers complaining about any safety problems in recent news ? Can you give me a couple of examples in our support cases where users are reporting similar events ? Ensure you include the Ticket IDs
+Give me a few bullets with details about the case with Ticket ID: fad18c70-0ff3-4786-9caa-21ce3fabb8a7. Also tell me how much the customer mentioned in the ticket as spent on rides.
