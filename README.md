@@ -16,7 +16,7 @@ third party services), which requires calling arbitrary python.
 
 The Agent Gateway supports multi-step and multi-tool workflows. Users have the flexibility to create multiple Cortex Search and Cortex Analyst tools for use with the Agent Gateway. For a walkthrough of how to configure and run a system with all 3 types of tools, see the [Quickstart](Quickstart.ipynb) notebook.
 
-This library is optimized for client-side orchestration. If you prefer a managed service, we recommend the Snowflake Chat API.
+This library is optimized for client-side orchestration. If you prefer a managed service, we recommend the Snowflake Cortex Agents API.
 
 # Getting Started
 
@@ -35,7 +35,8 @@ pip install git+https://github.com/Snowflake-Labs/orchestration-framework.git@tr
 3. Configure `.env` file.
 
 4. Demo:
-    - In order to show Streamlit app, do ```
+    - In order to show Streamlit app, do 
+    ```
     cd demo_app
     streamlit run demo_app.py
     ```
