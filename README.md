@@ -34,13 +34,11 @@ pip install git+https://github.com/Snowflake-Labs/orchestration-framework.git@tr
 
 3. Configure `.env` file.
 
-4. Demo:
-    - In order to show Streamlit app, do 
+4. Demo: Start a terminal and run the following statements
     ```
     cd demo_app
     streamlit run demo_app.py
     ```
-    - In order to show Trulens integration, select `orchestration_framework` kernel and run `CX_AGENTS.ipynb`.
 
 5: Sample questions to ask:
 ```

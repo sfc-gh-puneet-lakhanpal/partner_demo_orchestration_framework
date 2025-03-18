@@ -25,8 +25,9 @@ import requests
 import streamlit as st
 from dotenv import load_dotenv
 from snowflake.snowpark import Session
+from trulens.connectors.snowflake import SnowflakeConnector
 os.environ['LOGGING_LEVEL']='DEBUG'
-from agent_gateway import Agent
+from agent_gateway import TruAgent
 from agent_gateway.tools import CortexAnalystTool, CortexSearchTool, PythonTool
 from agent_gateway.tools.utils import parse_log_message
 
@@ -79,9 +80,9 @@ python_config = {
 if "prompt_history" not in st.session_state:
     st.session_state["prompt_history"] = {}
 
-if "snowpark" not in st.session_state or st.session_state.snowpark is None:
+if "snowpark" not in st.session_state or st.session_state.snowpark is None or "trulens_conn" not in st.session_state or st.session_state.trulens_conn is None:
     st.session_state.snowpark = Session.builder.configs(connection_parameters).create()
-    
+    st.session_state.trulens_conn = SnowflakeConnector(**connection_parameters)
     case_search_config = {
         "service_name": "CASE_SEARCH",
         "service_topic": "non-specifc examples of customer support cases",
@@ -139,11 +140,18 @@ if "snowpark" not in st.session_state or st.session_state.snowpark is None:
         st.session_state.support_analyst,
         st.session_state.news_search,
     ]
+    
 
 
 if "agent" not in st.session_state:
-    st.session_state.agent = Agent(snowflake_connection=st.session_state.snowpark, tools=st.session_state.snowflake_tools, max_retries=5)
-    
+    st.session_state.agent = TruAgent(
+        app_name="partner_demo_cx_agents",
+        app_version="v0.1",
+        trulens_snowflake_connection=st.session_state.trulens_conn,
+        snowflake_connection=st.session_state.snowpark,
+        tools=st.session_state.snowflake_tools,
+        max_retries=5
+    )
 
 def create_prompt(prompt_key: str):
     if prompt_key in st.session_state:
@@ -231,7 +239,7 @@ def process_message(prompt_id: str):
         asyncio.set_event_loop(loop)
         response = loop.run_until_complete(agent.acall(prompt))
         loop.close()
-        message_queue.put({"output": response})
+        message_queue.put(response)
 
     thread = threading.Thread(target=run_analysis)
     thread.start()
