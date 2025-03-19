@@ -45,9 +45,6 @@ connection_parameters = {
     "schema": os.getenv("SNOWFLAKE_SCHEMA"),
 }
 
-os.environ["NEWS_API_TOKEN"] = os.getenv("NEWS_API_TOKEN")
-
-
 class NewsTool:
     def __init__(self, token) -> None:
         self.url = "https://serpapi.com/search"
